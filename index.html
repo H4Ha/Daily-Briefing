@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Daily Briefing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg-primary: #f9fafb;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f3f4f6;
+            --border-primary: #e5e7eb;
+            --border-secondary: #d1d5db;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --text-tertiary: #6b7280;
+            --text-accent: #2563eb;
+            --text-accent-gradient-from: #3b82f6;
+            --text-accent-gradient-to: #10b981;
+            --caption-active-bg: #bfdbfe;
+            --caption-active-text: #1e3a8a;
+            --caption-inactive-opacity: 0.6;
+            --audio-panel-bg: #e5e7eb;
+            --audio-button-bg: #6b7280;
+            --audio-timeline-bg: #d1d5db;
+            --toggle-bg: #9ca3af;
+            --toggle-dot: #ffffff;
+        }
+
+        .dark {
+            --bg-primary: #111827;
+            --bg-secondary: #1f2937;
+            --bg-tertiary: #374151;
+            --border-primary: #374151;
+            --border-secondary: #4b5563;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-tertiary: #9ca3af;
+            --text-accent: #60a5fa;
+            --text-accent-gradient-from: #60a5fa;
+            --text-accent-gradient-to: #34d399;
+            --caption-active-bg: #fde68a;
+            --caption-active-text: #1f2937;
+            --caption-inactive-opacity: 0.5;
+            --audio-panel-bg: #374151;
+            --audio-button-bg: #d1d5db;
+            --audio-timeline-bg: #4b5563;
+            --toggle-bg: #4b5563;
+            --toggle-dot: #fde68a;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .app-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .title-gradient {
+            background-image: linear-gradient(
+                to right,
+                var(--text-accent-gradient-from),
+                var(--text-accent-gradient-to)
+            );
+            animation: gradient-flow 5s ease-in-out infinite;
+            background-size: 200% auto;
+        }
+
+        @keyframes gradient-flow {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .status-text {
+            color: var(--text-tertiary);
+        }
+
+        #caption-container {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-secondary);
+            color: var(--text-secondary);
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+
+        #caption-container p {
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.2s ease-in-out;
+            opacity: var(--caption-inactive-opacity);
+            line-height: 1.6;
+        }
+
+        #caption-container p.active-caption {
+            background-color: var(--caption-active-bg);
+            color: var(--caption-active-text);
+            opacity: 1;
+            font-weight: 600;
+            transform: scale(1.02);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+        }
+
+        #visuals-container {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-secondary);
+            color: var(--text-secondary);
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+            min-height: 300px;
+        }
+
+        .visual-item {
+            animation: fade-in 0.5s ease-out;
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        audio::-webkit-media-controls-panel {
+            background-color: var(--audio-panel-bg);
+            color: var(--text-primary);
+        }
+        audio::-webkit-media-controls-play-button,
+        audio::-webkit-media-controls-mute-button {
+            background-color: var(--audio-button-bg);
+            border-radius: 50%;
+        }
+        audio::-webkit-media-controls-timeline {
+            background-color: var(--audio-timeline-bg);
+            border-radius: 6px;
+        }
+
+        .theme-toggle-label {
+            width: 50px;
+            height: 26px;
+            background-color: var(--toggle-bg);
+            transition: background-color 0.3s ease;
+        }
+        .theme-toggle-dot {
+            width: 22px;
+            height: 22px;
+            background-color: var(--toggle-dot);
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+        input:checked + .theme-toggle-label .theme-toggle-dot {
+            transform: translateX(24px);
+        }
+    </style>
+</head>
+<body class="h-full flex items-center justify-center p-4">
+    <div class="app-container w-full max-w-3xl mx-auto p-6 sm:p-8 rounded-2xl shadow-2xl">
+        <div class="flex justify-between items-center mb-6">
+            <div class="text-left">
+                <h1
+                    class="title-gradient text-3xl sm:text-4xl font-bold text-transparent bg-clip-text"
+                >
+                    Your Daily Briefing
+                </h1>
+                <p class="status-text mt-2 text-sm sm:text-base">
+                    Personalized audio overview of world, science, &amp; economic news.
+                </p>
+            </div>
+            <div>
+                <input type="checkbox" id="theme-toggle" class="hidden" checked />
+                <label
+                    for="theme-toggle"
+                    class="theme-toggle-label relative inline-block rounded-full cursor-pointer"
+                >
+                    <span class="theme-toggle-dot absolute left-0.5 top-0.5 rounded-full shadow-md"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <button
+                id="generate-btn"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition-all duration-300 ease-in-out shadow-lg hover:shadow-blue-500/50 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                <svg
+                    id="play-icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="mr-2"
+                >
+                    <path d="M5 3l14 9-14 9V3z"></path>
+                </svg>
+                <svg
+                    id="loading-spinner"
+                    class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                >
+                    <circle
+                        class="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="4"
+                    ></circle>
+                    <path
+                        class="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                </svg>
+                <span id="btn-text">Generate News Overview</span>
+            </button>
+        </div>
+
+        <div id="status-message" class="status-text text-center h-6 mb-4 text-sm"></div>
+
+        <div id="audio-player-container" class="w-full hidden mb-6">
+            <audio id="audio-player" class="w-full rounded-lg" controls>
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+
+        <div id="content-area" class="w-full grid grid-cols-1 md:grid-cols-2 gap-6 hidden">
+            <div
+                id="caption-container"
+                class="w-full h-72 md:h-[30rem] overflow-y-auto rounded-lg p-4 text-lg"
+            ></div>
+
+            <div
+                id="visuals-container"
+                class="w-full h-72 md:h-[30rem] overflow-y-auto rounded-lg p-4 flex items-center justify-center"
+            >
+                <span id="visuals-placeholder" class="text-lg status-text"
+                    >Visuals will appear here as they're mentioned.</span
+                >
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        const generateBtn = document.getElementById('generate-btn');
+        const btnText = document.getElementById('btn-text');
+        const playIcon = document.getElementById('play-icon');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const statusMessage = document.getElementById('status-message');
+        const audioPlayerContainer = document.getElementById('audio-player-container');
+        const audioPlayer = document.getElementById('audio-player');
+        const contentArea = document.getElementById('content-area');
+        const captionContainer = document.getElementById('caption-container');
+        const visualsContainer = document.getElementById('visuals-container');
+        const visualsPlaceholder = document.getElementById('visuals-placeholder');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        let scriptSentences = [];
+        let generatedVisuals = [];
+        let sentenceTimestamps = [];
+        let currentActiveCaption = -1;
+        let currentActiveVisual = -1;
+        let chartInstances = [];
+
+        const API_TIMEOUT = 45000;
+
+        themeToggle.addEventListener('change', () => {
+            document.documentElement.classList.toggle('dark');
+            document.documentElement.classList.toggle('light');
+        });
+
+        generateBtn.addEventListener('click', handleGeneration);
+        audioPlayer.addEventListener('timeupdate', handleTimeUpdate);
+        audioPlayer.addEventListener('loadedmetadata', setupCaptionSync);
+        audioPlayer.addEventListener('ended', () => {
+            setLoadingState(false, 'Generate News Overview');
+        });
+
+        async function handleGeneration() {
+            setLoadingState(true, 'Generating Script...');
+            statusMessage.textContent = 'Contacting news desk...';
+            resetUI();
+
+            try {
+                const baseScript = await generateScript();
+                if (!baseScript || baseScript.length === 0) {
+                    throw new Error('Failed to generate script.');
+                }
+
+                setLoadingState(true, 'Analyzing for Visuals...');
+                statusMessage.textContent = 'Scanning script for data...';
+                const baseVisuals = await generateVisuals(baseScript);
+                generatedVisuals = baseVisuals || [];
+
+                const { finalScript, finalScriptSentences } = injectVisualReferences(
+                    baseScript,
+                    generatedVisuals
+                );
+                scriptSentences = finalScriptSentences;
+
+                populateCaptionContainer(scriptSentences);
+                renderVisuals(generatedVisuals);
+
+                statusMessage.textContent = 'Taking a brief pause to cool down...';
+                await new Promise((resolve) => setTimeout(resolve, 7000));
+
+                setLoadingState(true, 'Generating Audio...');
+                statusMessage.textContent = 'Warming up the microphone...';
+                const audioBlob = await generateAudio(finalScript);
+                if (!audioBlob) {
+                    throw new Error('Failed to generate audio.');
+                }
+
+                statusMessage.textContent = 'Audio brief ready.';
+                const audioUrl = URL.createObjectURL(audioBlob);
+                audioPlayer.src = audioUrl;
+                audioPlayer.playbackRate = 1.0;
+                audioPlayerContainer.classList.remove('hidden');
+                contentArea.classList.remove('hidden');
+                visualsPlaceholder.classList.add('hidden');
+                await audioPlayer.play();
+                setLoadingState(false, 'Regenerate Briefing');
+            } catch (error) {
+                console.error('Error during generation:', error);
+                statusMessage.textContent = `Error: ${error.message}`;
+                setLoadingState(false, 'Try Again');
+            }
+        }
+
+        function setLoadingState(isLoading, message) {
+            generateBtn.disabled = isLoading;
+            btnText.textContent = message;
+            if (isLoading) {
+                playIcon.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+            } else {
+                playIcon.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+
+        function resetUI() {
+            statusMessage.textContent = '';
+            audioPlayerContainer.classList.add('hidden');
+            contentArea.classList.add('hidden');
+            visualsPlaceholder.classList.remove('hidden');
+            captionContainer.innerHTML = '';
+            visualsContainer.innerHTML = '';
+            chartInstances.forEach((chart) => chart.destroy());
+            chartInstances = [];
+            audioPlayer.src = '';
+            scriptSentences = [];
+            generatedVisuals = [];
+            sentenceTimestamps = [];
+            currentActiveCaption = -1;
+            currentActiveVisual = -1;
+        }
+
+        function populateCaptionContainer(sentences) {
+            captionContainer.innerHTML = sentences
+                .map((sentence, index) => `<p id="caption-${index}">${sentence.trim()}</p>`)
+                .join('');
+        }
+
+        async function generateScript() {
+            const payload = {
+                systemPrompt:
+                    "You are a charismatic host for a daily news podcast called 'The Briefing'.",
+                query:
+                    'Generate the podcast script with the latest global, science, and economic developments. Return plain text with one sentence per line.'
+            };
+
+            const response = await fetchWithRetry(
+                '/api/script',
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                },
+                5,
+                1000,
+                API_TIMEOUT
+            );
+
+            const result = await response.json();
+            const text = result?.script;
+            if (!text) {
+                throw new Error(result?.error || 'No script content returned from API.');
+            }
+            return text;
+        }
+
+        async function generateVisuals(script) {
+            const payload = { script };
+            const response = await fetchWithRetry(
+                '/api/visuals',
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                },
+                5,
+                1000,
+                API_TIMEOUT
+            );
+
+            if (response.status === 204) {
+                return [];
+            }
+
+            const result = await response.json();
+            const visuals = result?.visuals;
+            if (!Array.isArray(visuals)) {
+                return [];
+            }
+            return visuals;
+        }
+
+        function injectVisualReferences(baseScript, visuals) {
+            const sentences = baseScript.split('\n').filter((s) => s.trim().length > 0);
+            const sortedVisuals = [...visuals].sort((a, b) => b.relevantScriptLine - a.relevantScriptLine);
+            let insertionCount = 0;
+
+            for (const visual of sortedVisuals) {
+                const lineIndex = visual.relevantScriptLine ?? 0;
+                const visualType = visual.type?.includes('CHART') ? 'chart' : 'visual';
+                const phrases = [
+                    `Take a look at the ${visualType} we prepared to see the numbers for yourself.`,
+                    `Check the ${visualType} titled '${visual.title}' for a quick snapshot.`,
+                    `The ${visualType} on screen captures the data point-by-point.`,
+                    `You can see this trend in the ${visualType} now.`,
+                    `Watch how the ${visualType} lays out the comparison in real time.`
+                ];
+                const referenceText = phrases[insertionCount % phrases.length];
+                sentences.splice(lineIndex + 1, 0, referenceText);
+                visual.syncIndex = lineIndex + 1;
+                insertionCount += 1;
+            }
+
+            return {
+                finalScript: sentences.join('\n'),
+                finalScriptSentences: sentences
+            };
+        }
+
+        function renderVisuals(visuals) {
+            visualsContainer.innerHTML = '';
+
+            visuals.forEach((visual, index) => {
+                const visualEl = document.createElement('div');
+                visualEl.id = `visual-${index}`;
+                visualEl.className = 'visual-item w-full h-full p-4 hidden flex-col gap-4';
+
+                const title = document.createElement('h3');
+                title.className = 'text-lg font-semibold text-center text-[var(--text-accent)] tracking-wide uppercase';
+                title.textContent = visual.title || 'Visual';
+                visualEl.appendChild(title);
+
+                if (visual.type?.includes('CHART')) {
+                    const canvas = document.createElement('canvas');
+                    canvas.id = `chart-${index}`;
+                    canvas.className = 'h-56';
+                    visualEl.appendChild(canvas);
+                } else if (visual.type === 'TABLE') {
+                    const table = document.createElement('table');
+                    table.className = 'w-full text-sm text-center border-separate border-spacing-y-2';
+                    const thead = document.createElement('thead');
+                    thead.className = 'bg-[var(--bg-tertiary)]';
+                    const headerRow = document.createElement('tr');
+                    (visual.data?.headers || []).forEach((header) => {
+                        const th = document.createElement('th');
+                        th.className = 'p-2 font-semibold';
+                        th.textContent = header;
+                        headerRow.appendChild(th);
+                    });
+                    thead.appendChild(headerRow);
+                    const tbody = document.createElement('tbody');
+                    (visual.data?.rows || []).forEach((row) => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'border-b border-[var(--border-primary)]';
+                        row.forEach((cell) => {
+                            const td = document.createElement('td');
+                            td.className = 'p-2 font-medium';
+                            td.textContent = cell;
+                            tr.appendChild(td);
+                        });
+                        tbody.appendChild(tr);
+                    });
+                    table.appendChild(thead);
+                    table.appendChild(tbody);
+                    visualEl.appendChild(table);
+                } else if (visual.type === 'INFO') {
+                    const grid = document.createElement('div');
+                    grid.className = 'grid grid-cols-2 gap-3';
+                    (visual.data?.points || []).forEach((point) => {
+                        const card = document.createElement('div');
+                        card.className = 'bg-[var(--bg-tertiary)] rounded-xl py-3 px-2 text-center shadow-sm';
+                        const [headline, value] = point.split(':').map((part) => part.trim());
+                        const valueEl = document.createElement('p');
+                        valueEl.className = 'text-2xl font-bold text-[var(--text-accent)]';
+                        valueEl.textContent = value || headline;
+                        const labelEl = document.createElement('p');
+                        labelEl.className = 'text-xs uppercase tracking-wider text-[var(--text-tertiary)]';
+                        labelEl.textContent = value ? headline : '';
+                        card.appendChild(valueEl);
+                        if (labelEl.textContent) {
+                            card.appendChild(labelEl);
+                        }
+                        grid.appendChild(card);
+                    });
+                    visualEl.appendChild(grid);
+                }
+
+                if (visual.caption) {
+                    const caption = document.createElement('p');
+                    caption.className = 'text-xs text-center mt-auto status-text uppercase tracking-wide';
+                    caption.textContent = visual.caption;
+                    visualEl.appendChild(caption);
+                }
+
+                visualsContainer.appendChild(visualEl);
+
+                if (visual.type?.includes('CHART')) {
+                    setupChart(index, visual);
+                }
+            });
+
+            visualsContainer.appendChild(visualsPlaceholder);
+        }
+
+        function setupChart(index, visual) {
+            const ctx = document.getElementById(`chart-${index}`)?.getContext('2d');
+            if (!ctx) return;
+
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            const textColor = isDark ? '#f9fafb' : '#111827';
+            const chartTypeMap = {
+                BAR_CHART: 'bar',
+                LINE_CHART: 'line',
+                AREA_CHART: 'line',
+                PIE_CHART: 'pie',
+                DOUGHNUT_CHART: 'doughnut',
+                RADAR_CHART: 'radar',
+                SCATTER_CHART: 'scatter'
+            };
+            const chartType = chartTypeMap[visual.type] || 'bar';
+
+            const datasets = (visual.data?.datasets || []).map((ds) => {
+                const baseColor = ds.color || (isDark ? '#60a5fa' : '#3b82f6');
+                return {
+                    label: ds.label,
+                    data: chartType === 'scatter' ? ds.points || [] : ds.values || [],
+                    backgroundColor:
+                        chartType === 'line' || chartType === 'radar'
+                            ? baseColor
+                            : baseColor + '99',
+                    borderColor: baseColor,
+                    borderWidth: 2,
+                    fill: chartType === 'line' && visual.type === 'AREA_CHART'
+                };
+            });
+
+            const chartConfig = {
+                type: chartType,
+                data: {
+                    labels: visual.data?.labels || [],
+                    datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: textColor,
+                                boxWidth: 12,
+                                font: { size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            displayColors: true
+                        }
+                    },
+                    scales:
+                        chartType === 'pie' || chartType === 'doughnut'
+                            ? undefined
+                            : {
+                                  y: {
+                                      beginAtZero: true,
+                                      grid: { color: gridColor },
+                                      ticks: { color: textColor }
+                                  },
+                                  x: {
+                                      grid: { display: chartType === 'scatter' ? true : false, color: gridColor },
+                                      ticks: { color: textColor }
+                                  }
+                              }
+                }
+            };
+
+            const chart = new Chart(ctx, chartConfig);
+            chartInstances.push(chart);
+        }
+
+        async function generateAudio(script) {
+            const payload = { script };
+            const response = await fetchWithRetry(
+                '/api/audio',
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                },
+                3,
+                1000,
+                60000
+            );
+
+            const mimeType = response.headers.get('Content-Type') || 'audio/wav';
+            const arrayBuffer = await response.arrayBuffer();
+            return new Blob([arrayBuffer], { type: mimeType });
+        }
+
+        function setupCaptionSync() {
+            sentenceTimestamps = [];
+            let cumulativeTime = 0;
+            const PLAYBACK_RATE = audioPlayer.playbackRate || 1;
+            const BASE_CHARS_PER_SECOND = 15;
+            const BREATHING_PAUSE = 0.8;
+            const punctuationPause = (sentence) => (/[.!?]$/.test(sentence.trim()) ? 0.35 : 0);
+
+            scriptSentences.forEach((sentence, index) => {
+                const effectiveCharsPerSecond = BASE_CHARS_PER_SECOND * (1 / PLAYBACK_RATE);
+                const durationInSeconds = sentence.length / effectiveCharsPerSecond;
+                const startTime = cumulativeTime;
+                sentenceTimestamps.push({
+                    text: sentence,
+                    startTime,
+                    syncIndex: generatedVisuals.findIndex((visual) => visual.syncIndex === index)
+                });
+                cumulativeTime += durationInSeconds + BREATHING_PAUSE + punctuationPause(sentence);
+            });
+
+            sentenceTimestamps.push({ text: '', startTime: cumulativeTime, syncIndex: -1 });
+        }
+
+        function handleTimeUpdate() {
+            const currentTime = audioPlayer.currentTime;
+            let newActiveCaption = -1;
+            for (let i = 0; i < sentenceTimestamps.length - 1; i += 1) {
+                if (
+                    currentTime >= sentenceTimestamps[i].startTime &&
+                    currentTime < sentenceTimestamps[i + 1].startTime
+                ) {
+                    newActiveCaption = i;
+                    break;
+                }
+            }
+
+            if (newActiveCaption !== -1 && newActiveCaption !== currentActiveCaption) {
+                if (currentActiveCaption !== -1) {
+                    document
+                        .getElementById(`caption-${currentActiveCaption}`)
+                        ?.classList.remove('active-caption');
+                }
+
+                const newCaptionEl = document.getElementById(`caption-${newActiveCaption}`);
+                if (newCaptionEl) {
+                    newCaptionEl.classList.add('active-caption');
+                    newCaptionEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                currentActiveCaption = newActiveCaption;
+
+                const visualData = sentenceTimestamps[currentActiveCaption];
+                if (
+                    visualData &&
+                    visualData.syncIndex !== -1 &&
+                    visualData.syncIndex !== currentActiveVisual
+                ) {
+                    if (currentActiveVisual !== -1) {
+                        const oldVisual = document.getElementById(`visual-${currentActiveVisual}`);
+                        oldVisual?.classList.add('hidden');
+                        oldVisual?.classList.remove('flex');
+                    }
+                    const newVisualEl = document.getElementById(`visual-${visualData.syncIndex}`);
+                    if (newVisualEl) {
+                        newVisualEl.classList.remove('hidden');
+                        newVisualEl.classList.add('flex');
+                    }
+                    visualsPlaceholder.classList.add('hidden');
+                    currentActiveVisual = visualData.syncIndex;
+                }
+            }
+        }
+
+        async function fetchWithRetry(url, options, retries = 5, delay = 1000, timeout = 20000) {
+            for (let attempt = 0; attempt < retries; attempt += 1) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
+                try {
+                    const response = await fetch(url, {
+                        ...options,
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+
+                    if (response.status === 429 || response.status >= 500) {
+                        throw new Error(`API Error: ${response.status}`);
+                    }
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        const err = new Error(
+                            `Fetch failed: ${response.status} ${response.statusText}. Response: ${errorText}`
+                        );
+                        err.name = 'NonRetryableError';
+                        throw err;
+                    }
+
+                    return response;
+                } catch (error) {
+                    clearTimeout(timeoutId);
+                    const isLastAttempt = attempt === retries - 1;
+                    if (error.name === 'AbortError' && !isLastAttempt) {
+                        await new Promise((resolve) => setTimeout(resolve, delay * 2 ** attempt));
+                        continue;
+                    }
+                    if (error.name === 'NonRetryableError' || isLastAttempt) {
+                        throw error;
+                    }
+                    await new Promise((resolve) => setTimeout(resolve, delay * 2 ** attempt));
+                }
+            }
+            throw new Error('Fetch failed after all retries.');
+        }
+    </script>
+</body>
+</html>
